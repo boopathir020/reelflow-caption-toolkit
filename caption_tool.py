@@ -1,3 +1,4 @@
+
 import re
 
 
@@ -30,15 +31,45 @@ def split_captions(text, max_chars=32):
     return lines
 
 
+def to_srt_time(milliseconds):
+    """Convert milliseconds to SRT timestamp format."""
+    hours = milliseconds // 3_600_000
+    minutes = (milliseconds % 3_600_000) // 60_000
+    seconds = (milliseconds % 60_000) // 1_000
+    millis = milliseconds % 1_000
+
+    return f"{hours:02}:{minutes:02}:{seconds:02},{millis:03}"
+
+
+def export_srt(lines, filename="captions.srt", seconds_per_line=2):
+    """Export captions with simple estimated timing."""
+    with open(filename, "w", encoding="utf-8") as file:
+        for index, line in enumerate(lines):
+            start = index * seconds_per_line * 1000
+            end = start + seconds_per_line * 1000
+
+            file.write(f"{index + 1}\n")
+            file.write(
+                f"{to_srt_time(start)} --> {to_srt_time(end)}\n"
+            )
+            file.write(f"{line}\n\n")
+
+
 if __name__ == "__main__":
-    sample = input("Enter your reel caption text: ")
+    text = input("Paste your reel script: ")
+
     try:
-        limit = int(input("Maximum characters per line (default 32): ") or 32)
-        if limit < 1:
+        max_chars = int(input("Max characters per line (32): ") or 32)
+        seconds = float(input("Seconds per caption (2): ") or 2)
+
+        if max_chars < 1 or seconds <= 0:
             raise ValueError
+
     except ValueError:
-        print("Please enter a positive whole number.")
+        print("Enter a positive character limit and duration.")
     else:
-        print("\n--- Caption Lines ---")
-        for index, line in enumerate(split_captions(sample, limit), 1):
-            print(f"{index:02d}: {line}")
+        captions = split_captions(text, max_chars)
+        export_srt(captions, seconds_per_line=seconds)
+
+        print(f"\nCreated captions.srt with {len(captions)} captions.")
+        print("Import captions.srt into Premiere Pro to review.")
